@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.lcdzzz.managebooks.dao.BookMapper">
+
+    <select id="getList" resultType="BookList">
+        select * from booklist
+    </select>
+
+    <select id="getListByQuery" parameterType="String" resultType="BookList">
+        select * from booklist where bname like CONCAT('%','${query}','%')
+    </select>
+
+    <select id="getListById" parameterType="int" resultType="BookList">
+        select * from borrow
+    </select>
+
+    <!--拿到可以被预约的图书-->
+    <select id="getRes" parameterType="String" resultType="Book">
+        select * from book where isbn=#{isbn} and (state=0 or (state=2 and book_id not in (select reservation.book_id from reservation))) order by state
+    </select>
+
+    <insert id="insertResInfo">
+        insert into reservation (user_id, book_id, deadline) values (#{user.userId}, #{book.bookId}, date_add(now(),interval 10 day))
+    </insert>
+
+    <select id="getResId" resultType="Reservation">
+        select * from reservation where book_id=#{book.bookId} and user_id=#{user.userId}
+    </select>
+
+    <select id="getResById" resultType="ReservationDetail">
+        select reservation_id, bname, deadline, user_name, book_id from reservation_detail where user_id = #{user.userId};
+    </select>
+
+    <select id="getBorById" resultType="BorrowDetail" parameterType="User">
+        select borrow_id, bname, btime, deadline, rtime from borrow_detail where user_id=#{user.userId}
+    </select>
+
+
+
+    <insert id="addBookList">
+        call library.new_book(#{booklist.isbn}, #{booklist.bname}, #{booklist.publisher}, #{booklist.writer},
+                              #{booklist.ptime}, #{booklist.number}, #{booklist.operator}, #{location}, #{state})
+    </insert>
+
+
+    <select id="getResList" resultType="ReservationDetail">
+        select reservation_id, bname, deadline, user_name from reservation_detail
+    </select>
+
+    <select id="processRes" resultType="Integer">
+        set @st = 1;
+        call library.make_reservation(#{isbn},#{user.userId}, @st);
+        select @st;
+    </select>
+    <!--<insert id="processRes">
+        insert reservation(reservation_id,user_id,book_id,deadline) values (1001,#{user.userId},)
+    </insert>-->
+   <!-- <insert id="processRes">
+    select count(*) into num from book where ISBN=bn and (state=0 or (state=2 and book_id not in (select reservation.book_id from reservation))) order by state;
+	select is_popular into ispop from booklist where booklist.ISBN=bn;
+    if ispop > 0 then
+		set st=-1;
+	else
+		if num > 0 then
+			select state, book_id into stat, bid from book where ISBN=bn  and (state=0 or (state=2 and book_id not in (select reservation.book_id from reservation))) order by state limit 0, 1;
+			if stat > 0 then
+				insert into reservation(user_id, book_id) values(uid, bid);
+				set st = 2;
+			else
+				insert into reservation(user_id, book_id, deadline) values(uid, bid, date_add(now(), interval 10 day));
+				update book set state=1 where book_id=bid;
+				set st = 1;
+			end if;
+		else
+			set st=0;
+		end if;
+	end if;
+
+    if t_error=1 then
+		rollback;
+        set st=-4;
+	else
+		commit;
+	end if;
+    </insert>-->
+
+<!--    <update id="returnBookById">
+        call library.return_book(#{borrowId});
+    </update>-->
+    <update id="returnBookById">
+        update borrow set rtime=CURRENT_TIMESTAMP where book_id=#{borrowId};
+    </update>
+
+    <select id="getBorList" resultType="BorrowDetail">
+        select borrow_id, bname, btime, deadline, rtime, user_name from borrow_detail;
+    </select>
+
+    <insert id="insertBorrow">
+        call library.borrow_from_res(#{rid}, #{op})
+    </insert>
+
+<delete id="deleteBookListById" >
+    delete from booklist where ISBN=#{isbn};
+</delete>
+
+</mapper>

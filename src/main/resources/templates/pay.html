@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="./js/vue.js"></script>
+    <script src="/static/scripts/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="./js/jquery.qrcode.min.js"></script>
+</head>
+<body>
+<div id="qrcode"></div>
+<div id="app">
+    <input type="text" v-model="url">
+</div>
+<script>
+    let vm = new Vue({
+        el: '#app',
+        data: {
+            url: ''
+        },
+        watch: {
+            url(n) {
+                document.getElementById("qrcode").innerHTML=''
+                er()
+                console.log(n)
+            }
+        }
+    })
+
+    function er() {
+        jQuery('#qrcode').qrcode(vm.url);
+    }
+
+    jQuery(function () {
+        jQuery('#qrcode').qrcode(vm.url);
+    })
+
+</script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"
+          xmlns:th="https://www.thymeleaf.org">
+    <title>Title</title>
+
+    <style>
+        video {
+            width: 50%;
+            height: 50%;
+            margin: 50px auto;
+            background-color: aquamarine;
+            display: block;
+        }
+    </style>
+    <script src="/static/scripts/jquery.min.js"></script>
+    <script src="/static/scripts/quagga.js"></script>
+    <script src="/static/scripts/vue.min.js"></script>
+
+</head>
+<body>
+<video id="video"></video>
+<canvas id="canvas" style="display: none;"></canvas>
+
+<section id="container" class="container">
+    <div class="controls">
+        <fieldset class="input-group">
+            <input type="file" accept="image/*;capture=camera">
+            <button>检测</button>
+        </fieldset>
+    </div>
+    <div id="result_strip">
+        <ul class="thumbnails"></ul>
+    </div>
+</section>
+
+
+<script>
+    var video = document.getElementById('video');
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+    var mediaStreamTrack = null;
+
+    if (navigator.mediaDevices.getUserMedia) {
+        //最新的标准API
+        navigator.mediaDevices.getUserMedia({video: {width: 1000, height: 1000}}).then(success).catch(error);
+    } else if (navigator.webkitGetUserMedia) {
+        //webkit核心浏览器
+        navigator.webkitGetUserMedia({video: {width: 1000, height: 1000}}, success, error)
+    } else if (navigator.mozGetUserMedia) {
+        //firfox浏览器
+        navigator.mozGetUserMedia({video: {width: 1000, height: 1000}}, success, error);
+    } else if (navigator.getUserMedia) {
+        //旧版API
+        navigator.getUserMedia({video: {width: 1000, height: 1000}}, success, error);
+    }
+
+    function success(stream) {
+        //兼容webkit核心浏览器
+        // let CompatibleURL = window.URL || window.webkitURL;
+
+        //将视频流设置为video元素的源
+        console.log(stream);
+
+        //video.src = CompatibleURL.createObjectURL(stream);
+        video.srcObject = stream;
+        video.play();
+    }
+
+    function error(error) {
+        console.log(`访问用户媒体设备失败${error.name}, ${error.message}`);
+    }
+
+    function getFace() {
+        context.drawImage(video, 0, 0, 300, 150);
+        this.img = canvas.toDataURL('image/jpg')
+        //获取完整的base64编码
+        // this.img = img.split(',')[1];
+        // console.log(this.img)
+        return this.img;
+    }
+
+    //将base64转换为文件
+    function dataURLtoFile(dataurl, filename) {
+        var arr = dataurl.split(','),
+            mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]),
+            n = bstr.length,
+            u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], filename, {type: mime});
+    }
+
+
+    function Facelogin() {
+        img = getFace();
+        let input = dataURLtoFile(img, "1.jpg");
+        console.log(input)
+        console.log(1)
+        Quagga.decodeSingle({
+            inputStream: {
+                size: 800
+            },
+            locator: {
+                patchSize: "medium",
+                halfSample: false
+            },
+            numOfWorkers: 1,
+            decoder: {
+                readers: [{
+                    format: "ean_reader",
+                    config: {}
+                }]
+            },
+            locate: true,
+            src: URL.createObjectURL(input)
+        }, function (result) {
+            var code = result.codeResult.code,
+                $node,
+                canvas = Quagga.canvas.dom.image;
+            $node = $(
+                '<li><div class="thumbnail"><div class="imgWrapper"><img /></div><div class="caption"><h4 class="code"></h4></div></div></li>'
+            );
+            $node.find("img").attr("src", canvas.toDataURL());
+            $node.find("h4.code").html(code);
+            alert(code)
+            console.log(code)
+            $("#result_strip ul.thumbnails").prepend($node);
+        });
+    }
+
+    setInterval(Facelogin, 2000);
+</script>
+
+<script>
+    $(function () {
+        $(".controls button").on("click", function (e) {
+            var input = document.querySelector(".controls input[type=file]");
+            console.log(input.files[0])
+            if (input.files && input.files.length) {
+                Quagga.decodeSingle({
+                    inputStream: {
+                        size: 800
+                    },
+                    locator: {
+                        patchSize: "medium",
+                        halfSample: false
+                    },
+                    numOfWorkers: 1,
+                    decoder: {
+                        readers: [{
+                            format: "ean_reader",
+                            config: {}
+                        }]
+                    },
+                    locate: true,
+                    src: URL.createObjectURL(input.files[0])
+                }, function (result) {
+                    var code = result.codeResult.code,
+                        $node,
+                        canvas = Quagga.canvas.dom.image;
+                    $node = $(
+                        '<li><div class="thumbnail"><div class="imgWrapper"><img /></div><div class="caption"><h4 class="code"></h4></div></div></li>'
+                    );
+                    $node.find("img").attr("src", canvas.toDataURL());
+                    $node.find("h4.code").html(code);
+                    console.log(code)
+                    $("#result_strip ul.thumbnails").prepend($node);
+                });
+            }
+        });
+    });
+</script>
+</body>
+</html>

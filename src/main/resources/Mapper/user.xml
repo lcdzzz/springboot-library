@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.lcdzzz.managebooks.dao.UserMapper">
+    <resultMap id="BaseResultMap" type="com.lcdzzz.managebooks.pojo.User">
+        <id column="user_id" jdbcType="INTEGER" property="userId"/>
+        <result column="user_name" jdbcType="VARCHAR" property="userName"/>
+        <result column="pass_wd" jdbcType="VARCHAR" property="passWd"/>
+        <result column="email" jdbcType="VARCHAR" property="email"/>
+    </resultMap>
+
+    <select id="checkUser" resultType="User">
+        select * from reader where user_name=#{user.userName} and pass_wd=#{user.passWd}
+    </select>
+
+    <select id="checkManager" resultType="User">
+        select manager_id as user_id, pass_wd, mname as user_name from manager where mname=#{user.userName} and pass_wd=#{user.passWd};
+    </select>
+
+
+    <sql id="Base_Column_List">
+        user_id, user_name, pass_wd, email
+    </sql>
+
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from reader
+        where user_id = #{userId,jdbcType=INTEGER}
+    </select>
+
+    <update id="updateByPrimaryKey" parameterType="com.lcdzzz.managebooks.pojo.User">
+        update reader
+        set user_name = #{userName,jdbcType=VARCHAR},
+            pass_wd = #{passWd,jdbcType=VARCHAR},
+            email = #{email,jdbcType=VARCHAR}
+        where user_id = #{userId,jdbcType=INTEGER}
+    </update>
+</mapper>
